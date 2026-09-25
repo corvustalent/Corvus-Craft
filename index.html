@@ -81,7 +81,13 @@
     cursor:pointer;transition:all 0.15s;
   }
   .btn-copy:hover,.btn-regen:hover{border-color:var(--slate);color:var(--white)}
-  .result-body{font-size:14px;color:rgba(255,255,255,0.85);line-height:1.8;white-space:pre-wrap}
+  .result-body{font-size:14px;color:rgba(255,255,255,0.85);line-height:1.8}
+  .result-body h1,.result-body h2,.result-body h3{color:var(--white);font-size:15px;font-weight:600;margin:20px 0 8px}
+  .result-body p{margin-bottom:10px}
+  .result-body ul{padding-left:0;list-style:none;margin-bottom:12px}
+  .result-body ul li{padding:3px 0;color:rgba(255,255,255,0.85)}
+  .result-body ul li::before{content:'·';color:var(--slate);margin-right:8px}
+  .result-body hr{border:none;border-top:1px solid var(--border);margin:16px 0}
   .result-body.streaming{border-right:2px solid var(--slate);padding-right:2px;animation:blink 0.8s step-end infinite}
   @keyframes blink{50%{border-color:transparent}}
 
@@ -447,11 +453,12 @@ async function generateJD() {
     let i = 0;
     const speed = Math.max(5, Math.floor(30 / (text.length / 500)));
     const interval = setInterval(() => {
-      resultBody.textContent = text.slice(0, i);
+      resultBody.innerHTML = renderMarkdown(text.slice(0, i));
       i += 3;
       if (i >= text.length) {
-        resultBody.textContent = text;
+        resultBody.innerHTML = renderMarkdown(text);
         resultBody.classList.remove('streaming');
+        resultBody.dataset.raw = text;
         clearInterval(interval);
       }
     }, speed);
@@ -465,8 +472,25 @@ async function generateJD() {
   }
 }
 
+function renderMarkdown(text) {
+  return text
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^---$/gm, '<hr>')
+    .replace(/^[·•\-] (.+)$/gm, '<ul><li>$1</li></ul>')
+    .replace(/<\/ul>\n<ul>/g, '')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[hup]|<hr)(.+)$/gm, '<p>$1</p>')
+    .replace(/<p><\/p>/g, '')
+    .trim();
+}
+
 async function copyJD() {
-  const text = document.getElementById('result-body').textContent;
+  const el = document.getElementById('result-body');
+  const text = el.dataset.raw || el.textContent;
   if (!text) return;
   try {
     await navigator.clipboard.writeText(text);
@@ -480,4 +504,4 @@ async function copyJD() {
 window.addEventListener('DOMContentLoaded', updateLimitBanner);
 </script>
 </body>
-</html> 
+</html>
